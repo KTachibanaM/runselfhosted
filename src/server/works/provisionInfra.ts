@@ -55,7 +55,7 @@ export const provisionInfra = async (appId: string) => {
   };
 
   let dropletActivePoll = 0;
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     (function waitForDropletActive() {
       if (dropletActivePoll > DropletActivePollMax) {
         return reject();
@@ -67,4 +67,14 @@ export const provisionInfra = async (appId: string) => {
       setTimeout(waitForDropletActive, DropletActivePollMs);
     })();
   });
+
+  // remove image
+  await api.images.deleteById(imageId);
+
+  // deprovision old droplets
+  const dropletsRes = await api.droplets.getAll('');
+  const oldDroplets = dropletsRes['droplets'].filter((d) => d.name === getDropletName(app) && d.id !== dropletId);
+  for (const d of oldDroplets) {
+    await api.droplets.deleteById(d.id);
+  }
 };

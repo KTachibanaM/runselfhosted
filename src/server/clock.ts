@@ -46,6 +46,7 @@ export const unstableStateClock = () => {
 };
 
 export const stableStateClock = () => {
+  // TODO: should be able to adjust per app
   getApps().forEach(async (a) => {
     if (a.state === 'provisioned') {
       const gitHash = await getGitHash(a.gitUrl, a.gitBranch);

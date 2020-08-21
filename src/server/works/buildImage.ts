@@ -3,7 +3,7 @@ import { getAppById, getInfraById } from '../db';
 import { AppModel } from '../../shared/AppModel';
 
 export const getImageName = (app: AppModel) => {
-  return `runselfhosted-${app.id}-${app.nextGitHash}`;
+  return `runselfhosted-${app.slug}-${app.nextGitHash}`;
 };
 
 export const buildImage = async (appId: string) => {
