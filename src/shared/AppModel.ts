@@ -1,4 +1,6 @@
 // TODO: add removing-image
+// TODO: add deprovisioning-prev-infra
+// TODO: add reserving-ip and/or attaching-domain
 export const States = ['pending-provision', 'building-image', 'provisioning-infra', 'provisioned'] as const;
 export type State = typeof States[number];
 export const InitialState: State = 'pending-provision';

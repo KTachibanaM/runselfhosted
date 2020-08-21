@@ -54,6 +54,7 @@ export const CreateInfra: React.FunctionComponent<any> = () => {
             <InputLabel>Token</InputLabel>
             <Input
               value={token}
+              type='password'
               onChange={(e) => {
                 e.preventDefault();
                 setToken(e.target.value);

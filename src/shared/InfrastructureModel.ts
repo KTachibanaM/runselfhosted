@@ -1,4 +1,4 @@
-export const Providers = ['digitalocean', 'linode'] as const;
+export const Providers = ['digitalocean'] as const;
 export type Provider = typeof Providers[number];
 
 export interface InfrastructureModel {
