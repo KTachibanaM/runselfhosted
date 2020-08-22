@@ -1,11 +1,9 @@
-import { buildImage } from './works/buildImage';
-import { provisionInfra } from './works/provisionInfra';
 import Queue from 'bull';
-import { setStateState } from './db';
+import { provisioning } from './provisioning/provisioning';
 
 const WorkMaxDurationMs = 1000 * 60 * 60;
 
-export const Works = ['buildImage', 'provisionInfra'] as const;
+export const Works = ['provision'] as const;
 export type Work = typeof Works[number];
 
 export interface WorkQueueItem {
@@ -14,12 +12,8 @@ export interface WorkQueueItem {
 }
 
 export const work = async ({ work, appId }: WorkQueueItem) => {
-  if (work === 'buildImage') {
-    await buildImage(appId);
-    setStateState(appId, 'finished');
-  } else if (work === 'provisionInfra') {
-    await provisionInfra(appId);
-    setStateState(appId, 'finished');
+  if (work === 'provision') {
+    await provisioning(appId);
   } else {
     console.log(`Unknown work type ${work}`);
   }

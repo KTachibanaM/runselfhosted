@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { AppModel, State, StateState } from '../shared/AppModel';
+import { AppModel, State } from '../shared/AppModel';
 import { InfrastructureModel } from '../shared/InfrastructureModel';
 
 const AppsJson = 'apps.temp.json';
@@ -43,10 +43,6 @@ export const setNextGitHash = (appId: string, gitHash: string) => {
 
 export const setCurrentGitHash = (appId: string, gitHash: string) => {
   setField(appId, 'currentGitHash', gitHash);
-};
-
-export const setStateState = (appId: string, stateState: StateState) => {
-  setField(appId, 'stateState', stateState);
 };
 
 export const setApps = (apps: AppModel[]) => {

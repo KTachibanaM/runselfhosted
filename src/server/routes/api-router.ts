@@ -2,7 +2,7 @@ import bodyParser from 'body-parser';
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getApps, getAppById, setApps, getInfras, setInfras, getInfraById } from '../db';
-import { InitialState, InitialStateState } from '../../shared/AppModel';
+import { InitialState } from '../../shared/AppModel';
 
 export function apiRouter() {
   const router = Router();
@@ -29,7 +29,6 @@ export function apiRouter() {
         gitBranch,
         infraId,
         state: InitialState,
-        stateState: InitialStateState,
         currentGitHash: '',
         nextGitHash: '',
       },
