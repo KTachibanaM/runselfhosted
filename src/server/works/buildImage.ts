@@ -1,6 +1,7 @@
 import { packerBuild } from '../libs/packer';
 import { getAppById, getInfraById } from '../db';
 import { AppModel } from '../../shared/AppModel';
+import * as fs from 'fs';
 
 export const getImageName = (app: AppModel) => {
   return `runselfhosted-${app.slug}-${app.nextGitHash}`;
@@ -28,7 +29,13 @@ export const buildImage = async (appId: string) => {
     [
       {
         type: 'shell',
-        inline: ['touch /tmp/hello-from-run-selfhosted.txt'],
+        scripts: ['configure.sh'],
+      },
+    ],
+    [
+      {
+        fileName: 'configure.sh',
+        fileContent: fs.readFileSync('resources/configure.sh', 'utf-8'),
       },
     ],
   );
