@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to configure host for runselfhosted
+# Script to configure a docker/docker-compose host for runselfhosted
 set -e
 
 # Update system
@@ -14,11 +14,12 @@ apt-get upgrade -y
 # TODO: replace git url
 git clone https://github.com/DIYgod/RSSHub.git /root/app
 
+# TODO: put docker compose into systemd
 # TODO: docker compose path is configurable
-# TODO: docker compose always restart
 # TODO: build image locally
-docker-compose -f /root/app/docker-compose.yml up -d
-docker-compose -f /root/app/docker-compose.yml down
+# TODO: remove docker compose always restart
+# docker-compose -f /root/app/docker-compose.yml up -d
+# docker-compose -f /root/app/docker-compose.yml down
 
 ###
 # Nginx

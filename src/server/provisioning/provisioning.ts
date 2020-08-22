@@ -4,8 +4,8 @@ import fs from 'fs';
 import DigitalOcean from 'do-wrapper';
 import { AppModel } from '../../shared/AppModel';
 
-const DropletActivePollMs = 1000 * 10;
-const DropletActivePollMax = 60;
+const DropletStatusPollMs = 1000 * 10;
+const DropletStatusPollMax = 60;
 
 const getImageName = (app: AppModel) => {
   return `runselfhosted-${app.slug}-${app.nextGitHash}`;
@@ -86,34 +86,28 @@ export const provisioning = async (appId: string) => {
   });
   const dropletId = dropletRes['droplet']['id'];
 
-  const isDropletActive = async (): Promise<boolean> => {
+  const isDropletInStatus = async (status: string) => {
     const dRes = await api.droplets.getById(dropletId);
-    return dRes['droplet']['status'] === 'active';
+    return dRes['droplet']['status'] === status;
   };
 
-  const waitForDropletActive = async () => {
-    let dropletActivePoll = 0;
-    await new Promise((resolve, reject) => {
-      (function waitForDropletActive() {
-        if (dropletActivePoll > DropletActivePollMax) {
+  const waitForDropletStatus = async (status: string) => {
+    let dropletStatusPollCount = 0;
+    return new Promise((resolve, reject) => {
+      const waitForDropletStatus = async () => {
+        if (dropletStatusPollCount > DropletStatusPollMax) {
           return reject();
         }
-        if (isDropletActive()) {
+        if (await isDropletInStatus(status)) {
           return resolve();
         }
-        dropletActivePoll++;
-        setTimeout(waitForDropletActive, DropletActivePollMs);
-      })();
+        dropletStatusPollCount++;
+        setTimeout(waitForDropletStatus, DropletStatusPollMs);
+      };
+      waitForDropletStatus();
     });
   };
-
-  console.log(`Waiting for droplet to be active for app ${app.slug}`);
-  await waitForDropletActive();
-
-  // restart droplet to start docker compose containers
-  console.log(`Restarting droplet to start docker compose containers for app ${app.slug}`);
-  await api.droplets.requestAction(dropletId, { type: 'power_cycle' });
-  await waitForDropletActive();
+  await waitForDropletStatus('active');
 
   // remove image
   console.log(`Removing image for app ${app.slug}`);

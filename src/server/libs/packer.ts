@@ -1,10 +1,23 @@
 import fs from 'fs';
-import childProcess from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import rmdir from 'rmrf';
-import * as util from 'util';
 import { getTmpDirSync } from './tmpDir';
 
-const execAsync = util.promisify(childProcess.exec);
+// https://2ality.com/2018/05/child-process-streams.html
+const onExit = (childProcess: ChildProcess): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    childProcess.once('exit', (code: number, _: string) => {
+      if (code === 0) {
+        resolve(undefined);
+      } else {
+        reject(new Error('Exit with error code: ' + code));
+      }
+    });
+    childProcess.once('error', (err: Error) => {
+      reject(err);
+    });
+  });
+};
 
 export const packerBuild = async (
   builders: any[],
@@ -30,10 +43,11 @@ export const packerBuild = async (
   );
 
   // run packer build
-  const { stdout, stderr } = await execAsync('packer build packer.json', {
+  const p = spawn('packer', ['build', 'packer.json'], {
     cwd: tmpDir,
+    stdio: [process.stdin, process.stdout, process.stderr],
   });
-  console.log(stdout, stderr);
+  await onExit(p);
 
   await rmdir(tmpDir);
 };
