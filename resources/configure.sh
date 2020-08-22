@@ -14,12 +14,36 @@ apt-get upgrade -y
 # TODO: replace git url
 git clone https://github.com/DIYgod/RSSHub.git /root/app
 
-# TODO: put docker compose into systemd
 # TODO: docker compose path is configurable
 # TODO: build image locally
 # TODO: remove docker compose always restart
-# docker-compose -f /root/app/docker-compose.yml up -d
-# docker-compose -f /root/app/docker-compose.yml down
+cat > /etc/systemd/system/runselfhosted.service <<- EOM
+[Unit]
+Description=runselfhosted
+Requires=docker.service network-online.target
+After=docker.service network-online.target
+
+[Service]
+WorkingDirectory=/root/app
+Type=simple
+TimeoutStartSec=15min
+Restart=always
+
+ExecStartPre=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml pull --quiet --ignore-pull-failures
+ExecStartPre=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml build --pull
+
+ExecStart=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml up --remove-orphans
+
+ExecStop=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml down --remove-orphans
+
+ExecReload=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml pull --quiet --ignore-pull-failures
+ExecReload=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml build --pull
+
+[Install]
+WantedBy=multi-user.target
+EOM
+systemctl enable runselfhosted
+systemctl reload runselfhosted.service
 
 ###
 # Nginx
