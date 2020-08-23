@@ -5,6 +5,7 @@ import DigitalOcean from 'do-wrapper';
 import { AppModel } from '../../shared/AppModel';
 import { booleanPolling } from '../libs/boolean-polling';
 import fetch from 'node-fetch';
+import { getGitRepoFileContent } from '../libs/git';
 
 const getImageName = (app: AppModel) => {
   return `runselfhosted-${app.slug}-${app.nextGitHash}`;
@@ -16,7 +17,10 @@ const getDropletName = (app: AppModel) => {
 
 interface ConfigureScript {
   gitUrl: string;
+  gitHash: string;
+  dockerContext: string;
   dockerComposePath: string;
+  dockerComposeContent: string;
   serverName: string;
   webPort: number;
 }
@@ -25,7 +29,10 @@ const configureScript = (config: ConfigureScript) => {
   return fs
     .readFileSync('resources/configure.sh', 'utf-8')
     .replace(/RUNSELFHOSTED_GIT_URL/g, config.gitUrl)
+    .replace(/RUNSELFHOSTED_GIT_HASH/g, config.gitHash)
+    .replace(/RUNSELFHOSTED_DOCKER_CONTEXT/g, config.dockerContext)
     .replace(/RUNSELFHOSTED_DOCKER_COMPOSE_PATH/g, config.dockerComposePath)
+    .replace(/RUNSELFHOSTED_DOCKER_COMPOSE_CONTENT/g, config.dockerComposeContent)
     .replace(/RUNSELFHOSTED_SERVER_NAME/g, config.serverName)
     .replace(/RUNSELFHOSTED_WEB_PORT/g, config.webPort.toString());
 };
@@ -54,9 +61,13 @@ export const provisioning = async (appId: string) => {
   }
 
   // TODO: read actual repo and change
+  const dockerComposePath = 'docker-compose.yml';
   const config: ConfigureScript = {
     gitUrl: app.gitUrl,
-    dockerComposePath: 'docker-compose.yml',
+    gitHash: app.nextGitHash,
+    dockerContext: '.',
+    dockerComposePath: dockerComposePath,
+    dockerComposeContent: await getGitRepoFileContent(app.gitUrl, app.nextGitHash, dockerComposePath),
     serverName: floatingIp.ip,
     webPort: 1200,
   };
@@ -72,7 +83,8 @@ export const provisioning = async (appId: string) => {
         image: 'docker-18-04',
         // TODO: customize
         region: 'sfo2',
-        size: '512mb',
+        // TODO: customize
+        size: 's-1vcpu-1gb',
         // eslint-disable-next-line @typescript-eslint/camelcase
         ssh_username: 'root',
         // eslint-disable-next-line @typescript-eslint/camelcase
@@ -111,7 +123,7 @@ export const provisioning = async (appId: string) => {
     // TODO: customize
     region: 'sfo2',
     // TODO: customize
-    size: '512mb',
+    size: 's-1vcpu-1gb',
     image: imageId,
     // TODO: use existing public keys
     // eslint-disable-next-line @typescript-eslint/camelcase

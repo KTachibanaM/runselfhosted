@@ -30,18 +30,25 @@ export const App: React.FunctionComponent<Props> = ({ appId }) => {
     return <div>Loading...</div>;
   }
 
+  const webAddress = app.webAddress ? (
+    <a href={app.webAddress} target='_blank' rel='noreferrer'>
+      {app.webAddress}
+    </a>
+  ) : (
+    'N/A'
+  );
+
   return (
     <Card>
       <CardHeader title={app.slug} />
       <CardContent>
         <Typography>Id: {app.id}</Typography>
-        <Typography>Git URL: {app.gitUrl}</Typography>
-        <Typography>Git Branch: {app.gitBranch}</Typography>
+        <Typography>{`Git: ${app.gitUrl} (${app.gitBranch})`}</Typography>
         <Typography>
           Infrastructure: <NavLink to={`/infras/${app.infraId}`}>{app.infraId}</NavLink>
         </Typography>
         <Typography>State: {app.state}</Typography>
-        <Typography>Web address: {app.webAddress}</Typography>
+        <Typography>Web address: {webAddress}</Typography>
         <Button
           color='secondary'
           variant='contained'

@@ -10,11 +10,19 @@ apt-get upgrade -y
 # Docker-compose
 ###
 
-# Clone the app
+# Build the app
+# TODO: Swap the docker-compose file for replaced image and removed restart
 git clone RUNSELFHOSTED_GIT_URL /root/app
+pushd /root/app
+git checkout RUNSELFHOSTED_GIT_HASH
+docker build -t runselfhosted/app:1 RUNSELFHOSTED_DOCKER_CONTEXT
+cat > RUNSELFHOSTED_DOCKER_COMPOSE_PATH <<- EOM
+RUNSELFHOSTED_DOCKER_COMPOSE_CONTENT
+EOM
+docker-compose -f RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --ignore-pull-failures
+popd
 
-# TODO: build image locally with git commit
-# TODO: remove docker compose always restart
+# Enable via systemd
 cat > /etc/systemd/system/runselfhosted.service <<- EOM
 [Unit]
 Description=runselfhosted
@@ -27,22 +35,13 @@ Type=simple
 TimeoutStartSec=15min
 Restart=always
 
-ExecStartPre=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --quiet --ignore-pull-failures
-ExecStartPre=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
-
 ExecStart=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH up --remove-orphans
-
 ExecStop=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH down --remove-orphans
-
-ExecReload=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --quiet --ignore-pull-failures
-ExecReload=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
 
 [Install]
 WantedBy=multi-user.target
 EOM
 systemctl enable runselfhosted
-docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --quiet --ignore-pull-failures
-docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
 
 ###
 # Nginx

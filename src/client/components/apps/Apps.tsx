@@ -73,10 +73,10 @@ export class Apps extends React.Component<any, State> {
           <TableHead>
             <TableRow>
               <TableCell>Name</TableCell>
-              <TableCell>Git URL</TableCell>
-              <TableCell>Git Branch</TableCell>
+              <TableCell>Git</TableCell>
               <TableCell>Infrastructure</TableCell>
               <TableCell>State</TableCell>
+              <TableCell>Web address</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -85,12 +85,20 @@ export class Apps extends React.Component<any, State> {
                 <TableCell>
                   <NavLink to={`/apps/${app.id}`}>{app.slug}</NavLink>
                 </TableCell>
-                <TableCell>{app.gitUrl}</TableCell>
-                <TableCell>{app.gitBranch}</TableCell>
+                <TableCell>{`${app.gitUrl} (${app.gitBranch})`}</TableCell>
                 <TableCell>
                   <NavLink to={`/infras/${app.infraId}`}>{app.infraId}</NavLink>
                 </TableCell>
                 <TableCell>{app.state}</TableCell>
+                <TableCell>
+                  {app.webAddress ? (
+                    <a href={app.webAddress} target='_blank' rel='noreferrer'>
+                      {app.webAddress}
+                    </a>
+                  ) : (
+                    'N/A'
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
