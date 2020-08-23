@@ -17,7 +17,7 @@ export const unstableStateClock = () => {
       setState(a.id, 'provisioning');
     } else if (a.state === 'provisioning') {
       console.log(`app ${a.slug} is still provisioning`);
-    } else if (a.state === 'provisioned') {
+    } else if (a.state === 'provisioned' || a.state === 'provision-errored') {
     } else {
       console.log(`Unhandled unstable state ${a.state} for app ${a.slug}`);
     }
@@ -33,7 +33,7 @@ export const stableStateClock = () => {
         setNextGitHash(a.id, gitHash);
         setState(a.id, 'pending-provision');
       }
-    } else if (a.state === 'pending-provision' || a.state === 'provisioning') {
+    } else if (a.state === 'pending-provision' || a.state === 'provisioning' || a.state === 'provision-errored') {
     } else {
       console.log(`Unhandled stable state ${a.state} for app ${a.slug}`);
     }

@@ -5,8 +5,11 @@ import CardHeader from '@material-ui/core/CardHeader';
 import Typography from '@material-ui/core/Typography';
 import { AppModel } from '../../../shared/AppModel';
 import { getAppById, redeployAppNewVersion } from '../../utils/api-facade';
-import { NavLink } from 'react-router-dom';
 import { Button } from '@material-ui/core';
+import { AppState } from './AppState';
+import { AppWebAddress } from './AppWebAddres';
+import { AppGit } from './AppGit';
+import { AppInfra } from './AppInfra';
 
 interface Props {
   appId: string;
@@ -30,25 +33,23 @@ export const App: React.FunctionComponent<Props> = ({ appId }) => {
     return <div>Loading...</div>;
   }
 
-  const webAddress = app.webAddress ? (
-    <a href={app.webAddress} target='_blank' rel='noreferrer'>
-      {app.webAddress}
-    </a>
-  ) : (
-    'N/A'
-  );
-
   return (
     <Card>
       <CardHeader title={app.slug} />
       <CardContent>
         <Typography>Id: {app.id}</Typography>
-        <Typography>{`Git: ${app.gitUrl} (${app.gitBranch})`}</Typography>
         <Typography>
-          Infrastructure: <NavLink to={`/infras/${app.infraId}`}>{app.infraId}</NavLink>
+          Git: <AppGit gitUrl={app.gitUrl} gitBranch={app.gitBranch} />
         </Typography>
-        <Typography>State: {app.state}</Typography>
-        <Typography>Web address: {webAddress}</Typography>
+        <Typography>
+          Infrastructure: <AppInfra infraId={app.infraId} />
+        </Typography>
+        <Typography>
+          State: <AppState state={app.state} />
+        </Typography>
+        <Typography>
+          Web address: <AppWebAddress webAddress={app.webAddress} />
+        </Typography>
         <Button
           color='secondary'
           variant='contained'
@@ -57,7 +58,7 @@ export const App: React.FunctionComponent<Props> = ({ appId }) => {
             redeployAppNewVersion(app.id);
           }}
         >
-          Redeploy new version
+          Deploy new version
         </Button>
       </CardContent>
     </Card>

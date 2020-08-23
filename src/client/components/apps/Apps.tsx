@@ -15,6 +15,10 @@ import TableCell from '@material-ui/core/TableCell';
 import TableBody from '@material-ui/core/TableBody';
 import TableContainer from '@material-ui/core/TableContainer';
 import { UnstableStateRefreshMs } from '../../../shared/config';
+import { AppState } from './AppState';
+import { AppWebAddress } from './AppWebAddres';
+import { AppGit } from './AppGit';
+import { AppInfra } from './AppInfra';
 
 interface State {
   apps: AppModel[];
@@ -85,19 +89,17 @@ export class Apps extends React.Component<any, State> {
                 <TableCell>
                   <NavLink to={`/apps/${app.id}`}>{app.slug}</NavLink>
                 </TableCell>
-                <TableCell>{`${app.gitUrl} (${app.gitBranch})`}</TableCell>
                 <TableCell>
-                  <NavLink to={`/infras/${app.infraId}`}>{app.infraId}</NavLink>
+                  <AppGit gitUrl={app.gitUrl} gitBranch={app.gitBranch} />
                 </TableCell>
-                <TableCell>{app.state}</TableCell>
                 <TableCell>
-                  {app.webAddress ? (
-                    <a href={app.webAddress} target='_blank' rel='noreferrer'>
-                      {app.webAddress}
-                    </a>
-                  ) : (
-                    'N/A'
-                  )}
+                  <AppInfra infraId={app.infraId} />
+                </TableCell>
+                <TableCell>
+                  <AppState state={app.state} />
+                </TableCell>
+                <TableCell>
+                  <AppWebAddress webAddress={app.webAddress} />
                 </TableCell>
               </TableRow>
             ))}
