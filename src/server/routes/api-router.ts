@@ -1,7 +1,7 @@
 import bodyParser from 'body-parser';
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getApps, getAppById, setApps, getInfras, setInfras, getInfraById } from '../db';
+import { getApps, getAppById, setApps, getInfras, setInfras, getInfraById, setState, setNextGitHash } from '../db';
 import { InitialState } from '../../shared/AppModel';
 
 export function apiRouter() {
@@ -31,9 +31,17 @@ export function apiRouter() {
         state: InitialState,
         currentGitHash: '',
         nextGitHash: '',
+        webAddress: '',
       },
     ]);
     res.json({ status: 'ok', id });
+  });
+
+  router.post('/api/apps/:appId/redeployNewVersion', (req, res) => {
+    const { appId } = req.params;
+    setState(appId, 'pending-provision');
+    setNextGitHash(appId, '');
+    res.json({ status: 'ok' });
   });
 
   router.get('/api/infras', (req, res) => {

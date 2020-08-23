@@ -4,8 +4,9 @@ import CardContent from '@material-ui/core/CardContent';
 import CardHeader from '@material-ui/core/CardHeader';
 import Typography from '@material-ui/core/Typography';
 import { AppModel } from '../../../shared/AppModel';
-import { getAppById } from '../../utils/api-facade';
+import { getAppById, redeployAppNewVersion } from '../../utils/api-facade';
 import { NavLink } from 'react-router-dom';
+import { Button } from '@material-ui/core';
 
 interface Props {
   appId: string;
@@ -13,10 +14,17 @@ interface Props {
 
 export const App: React.FunctionComponent<Props> = ({ appId }) => {
   const [app, setApp] = useState<AppModel | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    getAppById(appId).then((app) => setApp(app));
+    getAppById(appId)
+      .then((app) => setApp(app))
+      .catch((error) => setError(error));
   }, []);
+
+  if (error !== null) {
+    return <div>{error.toString()}</div>;
+  }
 
   if (app === null) {
     return <div>Loading...</div>;
@@ -33,6 +41,17 @@ export const App: React.FunctionComponent<Props> = ({ appId }) => {
           Infrastructure: <NavLink to={`/infras/${app.infraId}`}>{app.infraId}</NavLink>
         </Typography>
         <Typography>State: {app.state}</Typography>
+        <Typography>Web address: {app.webAddress}</Typography>
+        <Button
+          color='secondary'
+          variant='contained'
+          onClick={(e) => {
+            e.preventDefault();
+            redeployAppNewVersion(app.id);
+          }}
+        >
+          Redeploy new version
+        </Button>
       </CardContent>
     </Card>
   );

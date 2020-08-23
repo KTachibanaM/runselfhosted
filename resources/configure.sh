@@ -11,10 +11,9 @@ apt-get upgrade -y
 ###
 
 # Clone the app
-# TODO: replace git url
-git clone https://github.com/DIYgod/RSSHub.git /root/app
+git clone RUNSELFHOSTED_GIT_URL /root/app
 
-# TODO: build image locally
+# TODO: build image locally with git commit
 # TODO: remove docker compose always restart
 cat > /etc/systemd/system/runselfhosted.service <<- EOM
 [Unit]

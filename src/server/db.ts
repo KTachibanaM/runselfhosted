@@ -45,6 +45,10 @@ export const setCurrentGitHash = (appId: string, gitHash: string) => {
   setField(appId, 'currentGitHash', gitHash);
 };
 
+export const setWebAddress = (appId: string, webAddress: string) => {
+  setField(appId, 'webAddress', webAddress);
+};
+
 export const setApps = (apps: AppModel[]) => {
   return fs.writeFileSync(AppsJson, JSON.stringify(apps));
 };

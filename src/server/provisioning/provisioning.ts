@@ -1,11 +1,10 @@
-import { getAppById, getInfraById, setCurrentGitHash, setState } from '../db';
+import { getAppById, getInfraById, setCurrentGitHash, setState, setWebAddress } from '../db';
 import { packerBuild } from '../libs/packer';
 import fs from 'fs';
 import DigitalOcean from 'do-wrapper';
 import { AppModel } from '../../shared/AppModel';
-
-const PollMs = 1000 * 10;
-const PollMaxCount = 60;
+import { booleanPolling } from '../libs/boolean-polling';
+import fetch from 'node-fetch';
 
 const getImageName = (app: AppModel) => {
   return `runselfhosted-${app.slug}-${app.nextGitHash}`;
@@ -16,6 +15,7 @@ const getDropletName = (app: AppModel) => {
 };
 
 interface ConfigureScript {
+  gitUrl: string;
   dockerComposePath: string;
   serverName: string;
   webPort: number;
@@ -24,6 +24,7 @@ interface ConfigureScript {
 const configureScript = (config: ConfigureScript) => {
   return fs
     .readFileSync('resources/configure.sh', 'utf-8')
+    .replace(/RUNSELFHOSTED_GIT_URL/g, config.gitUrl)
     .replace(/RUNSELFHOSTED_DOCKER_COMPOSE_PATH/g, config.dockerComposePath)
     .replace(/RUNSELFHOSTED_SERVER_NAME/g, config.serverName)
     .replace(/RUNSELFHOSTED_WEB_PORT/g, config.webPort.toString());
@@ -54,6 +55,7 @@ export const provisioning = async (appId: string) => {
 
   // TODO: read actual repo and change
   const config: ConfigureScript = {
+    gitUrl: app.gitUrl,
     dockerComposePath: 'docker-compose.yml',
     serverName: floatingIp.ip,
     webPort: 1200,
@@ -132,19 +134,8 @@ export const provisioning = async (appId: string) => {
   };
 
   const waitForDropletStatus = async (status: string) => {
-    let pollCount = 0;
-    return new Promise((resolve, reject) => {
-      const poll = async () => {
-        if (pollCount > PollMaxCount) {
-          return reject();
-        }
-        if (await isDropletInStatus(status)) {
-          return resolve();
-        }
-        pollCount++;
-        setTimeout(poll, PollMs);
-      };
-      poll();
+    return booleanPolling(() => {
+      return isDropletInStatus(status);
     });
   };
   await waitForDropletStatus('active');
@@ -159,19 +150,8 @@ export const provisioning = async (appId: string) => {
   };
 
   const waitForFloatingIpActionComplete = async (floatingIp: string, actionId: string) => {
-    let pollCount = 0;
-    return new Promise((resolve, reject) => {
-      const poll = async () => {
-        if (pollCount > PollMaxCount) {
-          return reject();
-        }
-        if (await isFloatingIpActionCompleted(floatingIp, actionId)) {
-          return resolve();
-        }
-        pollCount++;
-        setTimeout(poll, PollMs);
-      };
-      poll();
+    return booleanPolling(() => {
+      return isFloatingIpActionCompleted(floatingIp, actionId);
     });
   };
 
@@ -201,6 +181,21 @@ export const provisioning = async (appId: string) => {
     await api.droplets.deleteById(d.id);
   }
 
+  const webAddress = `http://${floatingIp.ip}`;
+
+  const isWebAddressAlive = async () => {
+    const res = await fetch(webAddress);
+    return res.status === 200;
+  };
+
+  const waitForWebAddressAlive = async () => {
+    return booleanPolling(isWebAddressAlive);
+  };
+
+  // wait for web address to be alive
+  await waitForWebAddressAlive();
+
+  setWebAddress(app.id, webAddress);
   setCurrentGitHash(app.id, app.nextGitHash);
   setState(app.id, 'provisioned');
 };

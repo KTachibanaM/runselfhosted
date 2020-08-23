@@ -11,4 +11,5 @@ export interface AppModel {
   state: State;
   currentGitHash: string;
   nextGitHash: string;
+  webAddress: string;
 }

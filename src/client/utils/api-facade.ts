@@ -21,6 +21,10 @@ export function createApp(slug: string, gitUrl: string, gitBranch: string, infra
     .then((res) => res.data as { status: string; id: string });
 }
 
+export function redeployAppNewVersion(appId: string) {
+  return axios.post(`/api/apps/${appId}/redeployNewVersion`).then((res) => res.data as { status: string });
+}
+
 export function getInfras() {
   return axios.get(`/api/infras`).then((res) => res.data as InfrastructureModel[]);
 }
