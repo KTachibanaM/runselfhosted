@@ -1,4 +1,4 @@
-export const States = ['pending-provision', 'provisioning', 'provisioned'] as const;
+export const States = ['pending-provision', 'provisioning', 'provision-errored', 'provisioned'] as const;
 export type State = typeof States[number];
 export const InitialState: State = 'pending-provision';
 

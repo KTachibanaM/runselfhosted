@@ -12,15 +12,10 @@ export interface WorkQueueItem {
 }
 
 export const work = async ({ work, appId }: WorkQueueItem) => {
-  try {
-    if (work === 'provision') {
-      await provisioning(appId);
-    } else {
-      console.log(`Unknown work type ${work}`);
-    }
-  } catch (e) {
-    console.error('Work errored!');
-    console.error(e);
+  if (work === 'provision') {
+    await provisioning(appId);
+  } else {
+    console.log(`Unknown work type ${work}`);
   }
 };
 

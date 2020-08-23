@@ -11,15 +11,14 @@ apt-get upgrade -y
 ###
 
 # Build the app
-# TODO: Swap the docker-compose file for replaced image and removed restart
 git clone RUNSELFHOSTED_GIT_URL /root/app
 pushd /root/app
 git checkout RUNSELFHOSTED_GIT_HASH
-docker build -t runselfhosted/app:1 RUNSELFHOSTED_DOCKER_CONTEXT
 cat > RUNSELFHOSTED_DOCKER_COMPOSE_PATH <<- EOM
 RUNSELFHOSTED_DOCKER_COMPOSE_CONTENT
 EOM
 docker-compose -f RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --ignore-pull-failures
+docker-compose -f RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
 popd
 
 # Enable via systemd
