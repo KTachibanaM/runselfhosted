@@ -14,7 +14,6 @@ apt-get upgrade -y
 # TODO: replace git url
 git clone https://github.com/DIYgod/RSSHub.git /root/app
 
-# TODO: docker compose path is configurable
 # TODO: build image locally
 # TODO: remove docker compose always restart
 cat > /etc/systemd/system/runselfhosted.service <<- EOM
@@ -29,21 +28,22 @@ Type=simple
 TimeoutStartSec=15min
 Restart=always
 
-ExecStartPre=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml pull --quiet --ignore-pull-failures
-ExecStartPre=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml build --pull
+ExecStartPre=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --quiet --ignore-pull-failures
+ExecStartPre=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
 
-ExecStart=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml up --remove-orphans
+ExecStart=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH up --remove-orphans
 
-ExecStop=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml down --remove-orphans
+ExecStop=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH down --remove-orphans
 
-ExecReload=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml pull --quiet --ignore-pull-failures
-ExecReload=/usr/local/bin/docker-compose -f /root/app/docker-compose.yml build --pull
+ExecReload=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --quiet --ignore-pull-failures
+ExecReload=/usr/local/bin/docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
 
 [Install]
 WantedBy=multi-user.target
 EOM
 systemctl enable runselfhosted
-systemctl reload runselfhosted.service
+docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH pull --quiet --ignore-pull-failures
+docker-compose -f /root/app/RUNSELFHOSTED_DOCKER_COMPOSE_PATH build --pull
 
 ###
 # Nginx
@@ -116,17 +116,15 @@ http {
 EOM
 
 # Copy over the server block configuration
-# TODO: replace server name
-# TODO: replace port
 cat > /etc/nginx/vhost.d/runselfhosted.conf <<- EOM
 server {
         listen 80;
         listen [::]:80;
 
-        server_name example.com;
+        server_name RUNSELFHOSTED_SERVER_NAME;
 
         location / {
-                proxy_pass http://localhost:1200;
+                proxy_pass http://localhost:RUNSELFHOSTED_WEB_PORT;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade \$http_upgrade;
                 proxy_set_header Connection 'upgrade';

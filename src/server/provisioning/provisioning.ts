@@ -4,8 +4,8 @@ import fs from 'fs';
 import DigitalOcean from 'do-wrapper';
 import { AppModel } from '../../shared/AppModel';
 
-const DropletStatusPollMs = 1000 * 10;
-const DropletStatusPollMax = 60;
+const PollMs = 1000 * 10;
+const PollMaxCount = 60;
 
 const getImageName = (app: AppModel) => {
   return `runselfhosted-${app.slug}-${app.nextGitHash}`;
@@ -15,9 +15,51 @@ const getDropletName = (app: AppModel) => {
   return `runselfhosted-${app.slug}`;
 };
 
+interface ConfigureScript {
+  dockerComposePath: string;
+  serverName: string;
+  webPort: number;
+}
+
+const configureScript = (config: ConfigureScript) => {
+  return fs
+    .readFileSync('resources/configure.sh', 'utf-8')
+    .replace(/RUNSELFHOSTED_DOCKER_COMPOSE_PATH/g, config.dockerComposePath)
+    .replace(/RUNSELFHOSTED_SERVER_NAME/g, config.serverName)
+    .replace(/RUNSELFHOSTED_WEB_PORT/g, config.webPort.toString());
+};
+
 export const provisioning = async (appId: string) => {
   const app = getAppById(appId);
+  const dropletName = getDropletName(app);
+  const api = new DigitalOcean(getInfraById(app.infraId).token, 999);
 
+  // reserve floating IP
+  const floatingIpsRes = await api.floatingIPs.getAll('');
+  const floatingIps = floatingIpsRes['floating_ips'].filter(
+    (ip) => ip.droplet !== null && ip.droplet.name === dropletName,
+  );
+  let floatingIp;
+  if (floatingIps.length === 0) {
+    console.log(`Reserving an floating IP for app ${app.slug} `);
+    // TODO: customize region
+    const floatingIpRes = await api.floatingIPs.assignRegion('sfo2');
+    floatingIp = floatingIpRes['floating_ip'];
+  } else if (floatingIps.length > 1) {
+    console.log(`Getting more than one floating IPs for app ${app.slug}`);
+    return;
+  } else {
+    floatingIp = floatingIps[0];
+  }
+
+  // TODO: read actual repo and change
+  const config: ConfigureScript = {
+    dockerComposePath: 'docker-compose.yml',
+    serverName: floatingIp.ip,
+    webPort: 1200,
+  };
+
+  // build image
   console.log(`Building image for app ${app.slug}`);
   await packerBuild(
     [
@@ -44,12 +86,10 @@ export const provisioning = async (appId: string) => {
     [
       {
         fileName: 'configure.sh',
-        fileContent: fs.readFileSync('resources/configure.sh', 'utf-8'),
+        fileContent: configureScript(config),
       },
     ],
   );
-
-  const api = new DigitalOcean(getInfraById(app.infraId).token, 999);
 
   // get image id
   const imageName = getImageName(app);
@@ -65,7 +105,7 @@ export const provisioning = async (appId: string) => {
   // provision
   console.log(`Provisioning droplet for app ${app.slug}`);
   const dropletRes = await api.droplets.create({
-    name: getDropletName(app),
+    name: dropletName,
     // TODO: customize
     region: 'sfo2',
     // TODO: customize
@@ -92,19 +132,19 @@ export const provisioning = async (appId: string) => {
   };
 
   const waitForDropletStatus = async (status: string) => {
-    let dropletStatusPollCount = 0;
+    let pollCount = 0;
     return new Promise((resolve, reject) => {
-      const waitForDropletStatus = async () => {
-        if (dropletStatusPollCount > DropletStatusPollMax) {
+      const poll = async () => {
+        if (pollCount > PollMaxCount) {
           return reject();
         }
         if (await isDropletInStatus(status)) {
           return resolve();
         }
-        dropletStatusPollCount++;
-        setTimeout(waitForDropletStatus, DropletStatusPollMs);
+        pollCount++;
+        setTimeout(poll, PollMs);
       };
-      waitForDropletStatus();
+      poll();
     });
   };
   await waitForDropletStatus('active');
@@ -113,10 +153,50 @@ export const provisioning = async (appId: string) => {
   console.log(`Removing image for app ${app.slug}`);
   await api.images.deleteById(imageId);
 
+  const isFloatingIpActionCompleted = async (floatingIp: string, actionId: string) => {
+    const aRes = await api.floatingIPs.getAction(floatingIp, actionId);
+    return aRes['action']['status'] === 'completed';
+  };
+
+  const waitForFloatingIpActionComplete = async (floatingIp: string, actionId: string) => {
+    let pollCount = 0;
+    return new Promise((resolve, reject) => {
+      const poll = async () => {
+        if (pollCount > PollMaxCount) {
+          return reject();
+        }
+        if (await isFloatingIpActionCompleted(floatingIp, actionId)) {
+          return resolve();
+        }
+        pollCount++;
+        setTimeout(poll, PollMs);
+      };
+      poll();
+    });
+  };
+
+  // reassign floating IP
+  console.log(`Reassigning floating IP ${floatingIp.ip} to app ${app.slug}`);
+  if (floatingIp.droplet) {
+    // eslint-disable-next-line @typescript-eslint/camelcase,@typescript-eslint/ban-ts-ignore
+    // @ts-ignore
+    const unassignAction = await api.floatingIPs.requestAction(floatingIp.ip, {
+      type: 'unassign',
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      droplet_id: dropletId,
+    });
+    const actionId = unassignAction['action']['id'];
+    await waitForFloatingIpActionComplete(floatingIp.ip, actionId);
+  }
+  // eslint-disable-next-line @typescript-eslint/camelcase,@typescript-eslint/ban-ts-ignore
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  await api.floatingIPs.requestAction(floatingIp.ip, { type: 'assign', droplet_id: dropletId });
+
   // deprovision old droplets
   console.log(`Deprovisioning old droplet for app ${app.slug}`);
   const dropletsRes = await api.droplets.getAll('');
-  const oldDroplets = dropletsRes['droplets'].filter((d) => d.name === getDropletName(app) && d.id !== dropletId);
+  const oldDroplets = dropletsRes['droplets'].filter((d) => d.name === dropletName && d.id !== dropletId);
   for (const d of oldDroplets) {
     await api.droplets.deleteById(d.id);
   }

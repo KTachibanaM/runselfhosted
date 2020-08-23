@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import rmdir from 'rmrf';
-import { getTmpDirSync } from './tmpDir';
+import { getTmpDirSync } from './tmp-dir';
 
 // https://2ality.com/2018/05/child-process-streams.html
 const onExit = (childProcess: ChildProcess): Promise<void> => {
