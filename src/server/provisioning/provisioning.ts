@@ -214,8 +214,14 @@ export const provisioning = async (appId: string) => {
     const webAddress = `http://${floatingIp.ip}`;
 
     const isWebAddressAlive = async () => {
-      const res = await fetch(webAddress);
-      return res.status === 200;
+      try {
+        const res = await fetch(webAddress);
+        return res.status === 200;
+      } catch (e) {
+        console.warn(`Error polling web address ${webAddress}, ignore error`);
+        console.warn(e);
+        return false;
+      }
     };
 
     const waitForWebAddressAlive = async () => {
